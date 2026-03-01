@@ -32,10 +32,13 @@ news-quiz/
 │       ├── avatar-zork.webp      # ゾルク博士アバター
 │       └── avatar-pino.webp      # ピノアバター
 ├── src/
-│   ├── main.jsx                  # エントリポイント
+│   ├── main.jsx                  # エントリポイント（AuthProvider統合）
 │   ├── App.jsx                   # ルーティング + グローバルCSS (51行)
+│   ├── lib/
+│   │   └── supabase.js           # Supabaseクライアント初期化
 │   ├── context/
-│   │   └── ThemeContext.jsx       # テーマ定義・定数・THEMES・tapProps (332行)
+│   │   ├── ThemeContext.jsx       # テーマ定義・定数・THEMES・tapProps (332行)
+│   │   └── AuthContext.jsx        # 匿名認証管理（useAuth hook）
 │   ├── components/
 │   │   ├── shared/
 │   │   │   └── index.jsx         # TBox, TypewriterText, Scanlines等 (144行)
@@ -48,6 +51,10 @@ news-quiz/
 │   └── data/
 │       └── episodes/
 │           └── 2026-02-28-news-01.json  # サンプルエピソード
+├── supabase/
+│   └── migrations/
+│       └── 001_initial_schema.sql # DBスキーマ（episodes, play_sessions, likes）
+├── .env.example                  # 環境変数テンプレート
 ├── index.html
 ├── package.json
 ├── vite.config.js
@@ -79,9 +86,11 @@ CSS変数はApp.jsxの `<style>` タグで `:root` に注入。
 ## 設計上の決定事項
 
 ### 認証
-- **匿名ファースト:** 初回はUUID生成でlocalStorageに保存、ログイン不要で即プレイ
-- **後からアカウント化:** Supabase Authの匿名→メール/Google昇格機能を使用
+- **匿名ファースト:** App起動時に `supabase.auth.signInAnonymously()` で自動セッション作成
+- **後からアカウント化:** Supabase Authの匿名→メール/Google昇格機能を使用予定
+- **Supabase未設定時:** 環境変数が空ならSupabase機能を無効化し、ローカルのみで動作
 - **理由:** 学習アプリなので「すぐ始められる」体験が最優先
+- **使い方:** `useAuth()` フックで `{ user, loading, supabase }` を取得
 
 ### マネタイズ（将来）
 - 1日1エピソード無料、過去分やプレミアムは月額制を想定
@@ -102,7 +111,7 @@ CSS変数はApp.jsxの `<style>` タグで `:root` に注入。
 |---------|-----------|
 | 1-1 プロジェクト構成 | ✅ 完了 |
 | 1-2 デプロイ | ✅ 完了（Vercel） |
-| 1-3 API + DB | 🔜 次のタスク |
+| 1-3 API + DB | ✅ 完了 |
 | 2-1 Xシェア | 未着手 |
 | 2-2 いいね | 未着手（1-3依存） |
 | 2-3 みんなの結果 | 未着手（1-3, 3-1依存） |
@@ -112,11 +121,10 @@ CSS変数はApp.jsxの `<style>` タグで `:root` に注入。
 | 4-2 インポート+動的読み込み | 未着手（1-3, 4-1依存） |
 
 ### 次の作業（推奨順）
-1. **Supabase プロジェクト作成 + DB スキーマ構築** (1-3)
-2. **プレイデータ記録** (3-1) — API接続の最小実装
-3. **Xシェアボタン** (2-1) — バックエンド不要で並行可能
-4. **いいね** (2-2)
-5. **みんなの結果** (2-3)
+1. **プレイデータ記録** (3-1) — API接続の最小実装
+2. **Xシェアボタン** (2-1) — バックエンド不要で並行可能
+3. **いいね** (2-2)
+4. **みんなの結果** (2-3)
 
 ## ビルド・開発コマンド
 
