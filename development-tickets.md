@@ -170,13 +170,15 @@ CREATE POLICY "Episodes are public" ON episodes
 2. ajv によるバリデーションスクリプト (`npm run validate`)
 3. 追加チェック: wordBankに正解が含まれるか、correctIndex範囲チェック
 
-### TICKET 4-2: エピソードインポート + アプリの動的データ読み込み
-**ステータス: 未着手** / 依存: 1-3, 4-1
+### ✅ TICKET 4-2: エピソードインポート + アプリの動的データ読み込み
+**ステータス: 完了** (2026-03-02) / 依存: 1-3, 4-1
 
 **対応内容:**
-1. `EPISODE_DATA` 定数 → Supabaseからfetchに変更
-2. ローディングUI / エラーUI追加
-3. URLパラメータで特定エピソード表示: `?ep=2026-02-28-news-01`
+1. `useEpisode` フックで Supabase episodes テーブルから動的fetch
+2. Supabase未接続時はローカルJSONにフォールバック
+3. URLパラメータ `?ep=XXXX` で特定エピソード表示
+4. ローディングUI（スピナー）/ エラーUI（再読み込みボタン）追加
+5. マイグレーション: サンプルエピソードの data_json をフルデータに更新
 
 ---
 
