@@ -50,10 +50,21 @@ for (const filePath of files) {
         }
       }
     }
-    // 追加チェック: correctIndexがchoices範囲内か
+    // 追加チェック: correctIdがchoices内に存在するか・choice id重複がないか
     for (const [i, cq] of data.testPhase.confirm.entries()) {
-      if (cq.correctIndex >= cq.choices.length) {
-        warnings.push(`confirm問題${i + 1}: correctIndex(${cq.correctIndex})がchoices数(${cq.choices.length})を超えています`);
+      const choiceIds = cq.choices.map((c) => c?.id).filter((id) => typeof id === "string");
+
+      if (choiceIds.length !== cq.choices.length) {
+        warnings.push(`confirm問題${i + 1}: choicesにid未定義の要素があります`);
+      }
+
+      if (!choiceIds.includes(cq.correctId)) {
+        warnings.push(`confirm問題${i + 1}: correctId「${cq.correctId}」がchoicesのidに含まれていません`);
+      }
+
+      const duplicatedIds = [...new Set(choiceIds.filter((id, idx) => choiceIds.indexOf(id) !== idx))];
+      if (duplicatedIds.length > 0) {
+        warnings.push(`confirm問題${i + 1}: choicesのidが重複しています [${duplicatedIds.join(", ")}]`);
       }
     }
 
