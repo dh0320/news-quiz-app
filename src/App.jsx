@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { ThemeContext, THEMES } from "./context/ThemeContext.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
 import { Scanlines, ParticleBg, ThemeDecor, PhaseTransition } from "./components/shared/index.jsx";
@@ -7,6 +7,7 @@ import LearningScreen from "./components/LearningScreen.jsx";
 import ConfirmScreen from "./components/ConfirmScreen.jsx";
 import ExploreScreen from "./components/ExploreScreen.jsx";
 import ResultScreen from "./components/ResultScreen.jsx";
+import StatsScreen from "./components/StatsScreen.jsx";
 import episodeDataJson from "./data/episodes/2026-02-28-news-01.json";
 
 const EPISODE_DATA = episodeDataJson;
@@ -18,6 +19,7 @@ export default function App() {
   const [transition, setTransition] = useState(null);
   const [cfScore, setCfScore] = useState(0);
   const [exScore, setExScore] = useState(0);
+  const [showStats, setShowStats] = useState(false);
   const sessionIdRef = useRef(null);
   const { user, supabase } = useAuth();
 
@@ -72,8 +74,17 @@ export default function App() {
   const handleHome = () => {
     setCfScore(0); setExScore(0);
     sessionIdRef.current = null;
+    setShowStats(false);
     setPhase(PHASES.HOME);
   };
+
+  // 現在のランク（結果画面で使用）
+  const totalQ = EPISODE_DATA.testPhase.confirm.length + EPISODE_DATA.testPhase.explore.length;
+  const totalScore = cfScore + exScore;
+  const myRank = useMemo(() => {
+    if (phase !== PHASES.RESULT) return null;
+    return totalScore === totalQ ? "S" : totalScore >= totalQ * 0.8 ? "A" : totalScore >= totalQ * 0.5 ? "B" : "C";
+  }, [phase, totalScore, totalQ]);
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -95,9 +106,10 @@ export default function App() {
           {phase === PHASES.LEARNING && <LearningScreen episode={EPISODE_DATA} onComplete={() => goPhase(PHASES.CONFIRM, "確認", "CONFIRM PHASE")} />}
           {phase === PHASES.CONFIRM && <ConfirmScreen episode={EPISODE_DATA} onScore={handleConfirmDone} onComplete={() => {}} />}
           {phase === PHASES.EXPLORE && <ExploreScreen episode={EPISODE_DATA} onScore={handleExploreDone} onComplete={() => {}} />}
-          {phase === PHASES.RESULT && <ResultScreen episode={EPISODE_DATA} confirmScore={cfScore} exploreScore={exScore} onHome={handleHome} />}
+          {phase === PHASES.RESULT && <ResultScreen episode={EPISODE_DATA} confirmScore={cfScore} exploreScore={exScore} onHome={handleHome} onShowStats={() => setShowStats(true)} />}
         </div>
         {transition && <PhaseTransition label={transition.label} sublabel={transition.sublabel} onDone={doneTrans} />}
+        {showStats && <StatsScreen episode={EPISODE_DATA} myRank={myRank} onClose={() => setShowStats(false)} />}
       </div>
     </ThemeContext.Provider>
   );
