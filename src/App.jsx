@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { ThemeContext, THEMES } from "./context/ThemeContext.jsx";
+import { useAuth } from "./context/AuthContext.jsx";
 import { Scanlines, ParticleBg, ThemeDecor, PhaseTransition } from "./components/shared/index.jsx";
 import HomeScreen from "./components/HomeScreen.jsx";
 import LearningScreen from "./components/LearningScreen.jsx";
@@ -17,10 +18,62 @@ export default function App() {
   const [transition, setTransition] = useState(null);
   const [cfScore, setCfScore] = useState(0);
   const [exScore, setExScore] = useState(0);
+  const sessionIdRef = useRef(null);
+  const { user, supabase } = useAuth();
+
+  // プレイセッション: INSERT（Learning開始時）
+  const createSession = useCallback(async () => {
+    if (!supabase || !user) return;
+    try {
+      const { data, error } = await supabase
+        .from("play_sessions")
+        .insert({ episode_id: EPISODE_DATA.episodeId, user_id: user.id })
+        .select("id")
+        .single();
+      if (!error) sessionIdRef.current = data.id;
+    } catch { /* UX最優先: エラー時はローカルのみで続行 */ }
+  }, [supabase, user]);
+
+  // プレイセッション: UPDATE（スコア記録）
+  const updateSession = useCallback(async (fields) => {
+    if (!supabase || !sessionIdRef.current) return;
+    try {
+      await supabase
+        .from("play_sessions")
+        .update(fields)
+        .eq("id", sessionIdRef.current);
+    } catch { /* UX最優先 */ }
+  }, [supabase]);
 
   const goPhase = (next, label, sublabel) => setTransition({ label, sublabel, next });
   const doneTrans = () => { setPhase(transition.next); setTransition(null); };
   const cssVars = Object.entries(theme.vars).map(([k, v]) => `--${k.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v};`).join("");
+
+  // フェーズ遷移ハンドラ
+  const handleStart = () => {
+    createSession();
+    goPhase(PHASES.LEARNING, "調査開始", "OBSERVATION START");
+  };
+  const handleConfirmDone = (score) => {
+    setCfScore(score);
+    updateSession({ confirm_score: score, confirm_total: EPISODE_DATA.testPhase.confirm.length });
+    goPhase(PHASES.EXPLORE, "探究", "EXPLORE PHASE");
+  };
+  const handleExploreDone = (score) => {
+    setExScore(score);
+    updateSession({
+      explore_score: score,
+      explore_total: EPISODE_DATA.testPhase.explore.length,
+      completed: true,
+      completed_at: new Date().toISOString(),
+    });
+    goPhase(PHASES.RESULT, "調査完了", "REPORT FILED");
+  };
+  const handleHome = () => {
+    setCfScore(0); setExScore(0);
+    sessionIdRef.current = null;
+    setPhase(PHASES.HOME);
+  };
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -38,11 +91,11 @@ export default function App() {
       <div style={{ maxWidth: "430px", margin: "0 auto", minHeight: "100dvh", background: "var(--bg)", position: "relative", overflow: "hidden", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)", ...theme.bgStyle }}>
         <ParticleBg /><Scanlines /><ThemeDecor />
         <div style={{ position: "relative", zIndex: 1, minHeight: "100dvh" }}>
-          {phase === PHASES.HOME && <HomeScreen episode={EPISODE_DATA} onStart={() => goPhase(PHASES.LEARNING, "調査開始", "OBSERVATION START")} currentTheme={theme} onThemeChange={setTheme} />}
+          {phase === PHASES.HOME && <HomeScreen episode={EPISODE_DATA} onStart={handleStart} currentTheme={theme} onThemeChange={setTheme} />}
           {phase === PHASES.LEARNING && <LearningScreen episode={EPISODE_DATA} onComplete={() => goPhase(PHASES.CONFIRM, "確認", "CONFIRM PHASE")} />}
-          {phase === PHASES.CONFIRM && <ConfirmScreen episode={EPISODE_DATA} onScore={setCfScore} onComplete={() => goPhase(PHASES.EXPLORE, "探究", "EXPLORE PHASE")} />}
-          {phase === PHASES.EXPLORE && <ExploreScreen episode={EPISODE_DATA} onScore={setExScore} onComplete={() => goPhase(PHASES.RESULT, "調査完了", "REPORT FILED")} />}
-          {phase === PHASES.RESULT && <ResultScreen episode={EPISODE_DATA} confirmScore={cfScore} exploreScore={exScore} onHome={() => { setCfScore(0); setExScore(0); setPhase(PHASES.HOME); }} />}
+          {phase === PHASES.CONFIRM && <ConfirmScreen episode={EPISODE_DATA} onScore={handleConfirmDone} onComplete={() => {}} />}
+          {phase === PHASES.EXPLORE && <ExploreScreen episode={EPISODE_DATA} onScore={handleExploreDone} onComplete={() => {}} />}
+          {phase === PHASES.RESULT && <ResultScreen episode={EPISODE_DATA} confirmScore={cfScore} exploreScore={exScore} onHome={handleHome} />}
         </div>
         {transition && <PhaseTransition label={transition.label} sublabel={transition.sublabel} onDone={doneTrans} />}
       </div>

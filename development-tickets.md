@@ -111,8 +111,8 @@ CREATE POLICY "Episodes are public" ON episodes
 
 ## EPIC 2: 成績ページの拡張（シェア・いいね・みんなの結果）
 
-### TICKET 2-1: Xシェアボタンの実装
-**ステータス: 未着手** / 依存: なし（バックエンド不要で実装可能）
+### ✅ TICKET 2-1: Xシェアボタンの実装
+**ステータス: 完了** (2026-03-02) / 依存: なし（バックエンド不要で実装可能）
 
 **対応内容:**
 1. ResultScreen にシェアボタンUI追加
@@ -141,8 +141,8 @@ CREATE POLICY "Episodes are public" ON episodes
 
 ## EPIC 3: ユーザー集計・分析
 
-### TICKET 3-1: プレイデータの記録
-**ステータス: 未着手** / 依存: 1-3
+### ✅ TICKET 3-1: プレイデータの記録
+**ステータス: 完了** (2026-03-02) / 依存: 1-3
 
 **対応内容:**
 1. Learning開始時: `play_sessions` INSERT
