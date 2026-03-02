@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import { ThemeContext, THEMES } from "./context/ThemeContext.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
+import { useEpisode } from "./hooks/useEpisode.js";
 import { Scanlines, ParticleBg, ThemeDecor, PhaseTransition } from "./components/shared/index.jsx";
 import HomeScreen from "./components/HomeScreen.jsx";
 import LearningScreen from "./components/LearningScreen.jsx";
@@ -8,9 +9,7 @@ import ConfirmScreen from "./components/ConfirmScreen.jsx";
 import ExploreScreen from "./components/ExploreScreen.jsx";
 import ResultScreen from "./components/ResultScreen.jsx";
 import StatsScreen from "./components/StatsScreen.jsx";
-import episodeDataJson from "./data/episodes/2026-02-28-news-01.json";
 
-const EPISODE_DATA = episodeDataJson;
 const PHASES = { HOME: "home", LEARNING: "learning", CONFIRM: "confirm", EXPLORE: "explore", RESULT: "result" };
 
 export default function App() {
@@ -22,19 +21,20 @@ export default function App() {
   const [showStats, setShowStats] = useState(false);
   const sessionIdRef = useRef(null);
   const { user, supabase } = useAuth();
+  const { episode, loading: episodeLoading } = useEpisode();
 
   // プレイセッション: INSERT（Learning開始時）
   const createSession = useCallback(async () => {
-    if (!supabase || !user) return;
+    if (!supabase || !user || !episode) return;
     try {
       const { data, error } = await supabase
         .from("play_sessions")
-        .insert({ episode_id: EPISODE_DATA.episodeId, user_id: user.id })
+        .insert({ episode_id: episode.episodeId, user_id: user.id })
         .select("id")
         .single();
       if (!error) sessionIdRef.current = data.id;
     } catch { /* UX最優先: エラー時はローカルのみで続行 */ }
-  }, [supabase, user]);
+  }, [supabase, user, episode]);
 
   // プレイセッション: UPDATE（スコア記録）
   const updateSession = useCallback(async (fields) => {
@@ -58,14 +58,14 @@ export default function App() {
   };
   const handleConfirmDone = (score) => {
     setCfScore(score);
-    updateSession({ confirm_score: score, confirm_total: EPISODE_DATA.testPhase.confirm.length });
+    updateSession({ confirm_score: score, confirm_total: episode.testPhase.confirm.length });
     goPhase(PHASES.EXPLORE, "探究", "EXPLORE PHASE");
   };
   const handleExploreDone = (score) => {
     setExScore(score);
     updateSession({
       explore_score: score,
-      explore_total: EPISODE_DATA.testPhase.explore.length,
+      explore_total: episode.testPhase.explore.length,
       completed: true,
       completed_at: new Date().toISOString(),
     });
@@ -79,12 +79,12 @@ export default function App() {
   };
 
   // 現在のランク（結果画面で使用）
-  const totalQ = EPISODE_DATA.testPhase.confirm.length + EPISODE_DATA.testPhase.explore.length;
+  const totalQ = episode ? episode.testPhase.confirm.length + episode.testPhase.explore.length : 0;
   const totalScore = cfScore + exScore;
   const myRank = useMemo(() => {
-    if (phase !== PHASES.RESULT) return null;
+    if (phase !== PHASES.RESULT || !episode) return null;
     return totalScore === totalQ ? "S" : totalScore >= totalQ * 0.8 ? "A" : totalScore >= totalQ * 0.5 ? "B" : "C";
-  }, [phase, totalScore, totalQ]);
+  }, [phase, totalScore, totalQ, episode]);
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -102,14 +102,31 @@ export default function App() {
       <div style={{ maxWidth: "430px", margin: "0 auto", minHeight: "100dvh", background: "var(--bg)", position: "relative", overflow: "hidden", borderLeft: "1px solid var(--border)", borderRight: "1px solid var(--border)", ...theme.bgStyle }}>
         <ParticleBg /><Scanlines /><ThemeDecor />
         <div style={{ position: "relative", zIndex: 1, minHeight: "100dvh" }}>
-          {phase === PHASES.HOME && <HomeScreen episode={EPISODE_DATA} onStart={handleStart} currentTheme={theme} onThemeChange={setTheme} />}
-          {phase === PHASES.LEARNING && <LearningScreen episode={EPISODE_DATA} onComplete={() => goPhase(PHASES.CONFIRM, "確認", "CONFIRM PHASE")} />}
-          {phase === PHASES.CONFIRM && <ConfirmScreen episode={EPISODE_DATA} onScore={handleConfirmDone} onComplete={() => {}} />}
-          {phase === PHASES.EXPLORE && <ExploreScreen episode={EPISODE_DATA} onScore={handleExploreDone} onComplete={() => {}} />}
-          {phase === PHASES.RESULT && <ResultScreen episode={EPISODE_DATA} confirmScore={cfScore} exploreScore={exScore} onHome={handleHome} onShowStats={() => setShowStats(true)} />}
+          {episodeLoading ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100dvh", gap: "16px", color: "var(--text-dim)" }}>
+              <div style={{ width: "32px", height: "32px", border: "3px solid var(--border)", borderTop: "3px solid var(--accent)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: "14px" }}>データ受信中...</span>
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            </div>
+          ) : !episode ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100dvh", gap: "12px", padding: "32px", textAlign: "center" }}>
+              <span style={{ fontSize: "32px" }}>📡</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: "16px", color: "var(--accent)" }}>通信エラー</span>
+              <span style={{ fontSize: "13px", color: "var(--text-dim)", lineHeight: 1.6 }}>エピソードデータを取得できませんでした。<br />ページを再読み込みしてください。</span>
+              <button onClick={() => window.location.reload()} style={{ marginTop: "8px", padding: "10px 24px", background: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: "6px", fontSize: "14px", cursor: "pointer", fontFamily: "var(--font-display)" }}>再読み込み</button>
+            </div>
+          ) : (
+            <>
+              {phase === PHASES.HOME && <HomeScreen episode={episode} onStart={handleStart} currentTheme={theme} onThemeChange={setTheme} />}
+              {phase === PHASES.LEARNING && <LearningScreen episode={episode} onComplete={() => goPhase(PHASES.CONFIRM, "確認", "CONFIRM PHASE")} />}
+              {phase === PHASES.CONFIRM && <ConfirmScreen episode={episode} onScore={handleConfirmDone} onComplete={() => {}} />}
+              {phase === PHASES.EXPLORE && <ExploreScreen episode={episode} onScore={handleExploreDone} onComplete={() => {}} />}
+              {phase === PHASES.RESULT && <ResultScreen episode={episode} confirmScore={cfScore} exploreScore={exScore} onHome={handleHome} onShowStats={() => setShowStats(true)} />}
+            </>
+          )}
         </div>
         {transition && <PhaseTransition label={transition.label} sublabel={transition.sublabel} onDone={doneTrans} />}
-        {showStats && <StatsScreen episode={EPISODE_DATA} myRank={myRank} onClose={() => setShowStats(false)} />}
+        {showStats && episode && <StatsScreen episode={episode} myRank={myRank} onClose={() => setShowStats(false)} />}
       </div>
     </ThemeContext.Provider>
   );
