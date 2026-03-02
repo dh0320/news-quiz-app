@@ -150,13 +150,15 @@ CREATE POLICY "Episodes are public" ON episodes
 3. Explore完了時: UPDATE `explore_score, explore_total, completed: true`
 4. エラー時はローカルのみで続行（UX最優先）
 
-### TICKET 3-2: 管理者向け集計ダッシュボード
-**ステータス: 未着手** / 依存: 1-3, 3-1
+### ✅ TICKET 3-2: 管理者向け集計ダッシュボード
+**ステータス: 完了** (2026-03-02) / 依存: 1-3, 3-1
 
 **対応内容:**
-1. `/admin` ページ（Supabase認証で管理者のみ）
-2. アクセス数、完走率、平均スコア、ランク分布、いいね数
-3. 日次サマリー折れ線グラフ
+1. `/admin` ページ（Supabase メール認証 + VITE_ADMIN_EMAILS でアクセス制御）
+2. KPIカード: 総アクセス数、完走数/完走率、平均正答率、総いいね数、公開エピソード数
+3. 日次折れ線グラフ（SVG、過去14日のアクセス・完走推移）
+4. エピソード別テーブル（アクセス/完走/完走率/平均正答/いいね）
+5. Supabase RPC関数（SECURITY DEFINER）で集計データ取得
 
 ---
 
