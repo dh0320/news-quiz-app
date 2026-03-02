@@ -9,10 +9,14 @@ import ConfirmScreen from "./components/ConfirmScreen.jsx";
 import ExploreScreen from "./components/ExploreScreen.jsx";
 import ResultScreen from "./components/ResultScreen.jsx";
 import StatsScreen from "./components/StatsScreen.jsx";
+import AdminDashboard from "./components/AdminDashboard.jsx";
 
 const PHASES = { HOME: "home", LEARNING: "learning", CONFIRM: "confirm", EXPLORE: "explore", RESULT: "result" };
+const isAdminPage = window.location.pathname === "/admin";
 
 export default function App() {
+  // /admin パスなら管理ダッシュボードを表示
+  if (isAdminPage) return <AdminDashboard />;
   const [theme, setTheme] = useState(THEMES.cyber);
   const [phase, setPhase] = useState(PHASES.HOME);
   const [transition, setTransition] = useState(null);
