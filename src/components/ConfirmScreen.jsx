@@ -9,14 +9,14 @@ const ConfirmScreen = ({ episode, onComplete, onScore }) => {
   const lb = t.labels;
   const qs = episode.testPhase.confirm;
   const [qi, setQi] = useState(0);
-  const [sel, setSel] = useState(null);
+  const [selChoiceId, setSelChoiceId] = useState(null);
   const [ans, setAns] = useState(false);
   const [score, setScore] = useState(0);
   const q = qs[qi];
-  const isCorrect = ans && sel === q.correctIndex;
+  const isCorrect = ans && selChoiceId === q.correctId;
 
-  const pick = i=>{ if(ans)return; setSel(i); setAns(true); if(i===q.correctIndex) setScore(p=>p+1); };
-  const next = ()=>{ if(qi+1>=qs.length){onScore(score);onComplete();}else{setQi(p=>p+1);setSel(null);setAns(false);} };
+  const pick = choice=>{ if(ans)return; setSelChoiceId(choice.id); setAns(true); if(choice.id===q.correctId) setScore(p=>p+1); };
+  const next = ()=>{ if(qi+1>=qs.length){onScore(score);onComplete();}else{setQi(p=>p+1);setSelChoiceId(null);setAns(false);} };
 
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100dvh"}}>
@@ -45,12 +45,12 @@ const ConfirmScreen = ({ episode, onComplete, onScore }) => {
         )}
         {q.choices.map((c,i)=>{
           let bc="var(--border)",bg="var(--surface)",tc="var(--text)";
-          if(ans){if(i===q.correctIndex){bc="var(--accent)";bg="var(--accent-glow)";tc="var(--accent)";}else if(i===sel){bc="var(--error)";bg=`${t.vars.error}14`;tc="var(--error)";}else tc="var(--text-dim)";}
+          if(ans){if(c.id===q.correctId){bc="var(--accent)";bg="var(--accent-glow)";tc="var(--accent)";}else if(c.id===selChoiceId){bc="var(--error)";bg=`${t.vars.error}14`;tc="var(--error)";}else tc="var(--text-dim)";}
           return (
-            <div key={i} onClick={()=>pick(i)} {...(ans?{}:tapProps)} style={{padding:"14px 16px",marginBottom:"10px",cursor:ans?"default":"pointer",border:`1px solid ${bc}`,background:bg,color:tc,fontSize:"13.5px",lineHeight:1.6,transition:"all 0.3s",display:"flex",alignItems:"center",gap:"12px",borderRadius:ui.radius}}>
+            <div key={c.id} onClick={()=>pick(c)} {...(ans?{}:tapProps)} style={{padding:"14px 16px",marginBottom:"10px",cursor:ans?"default":"pointer",border:`1px solid ${bc}`,background:bg,color:tc,fontSize:"13.5px",lineHeight:1.6,transition:"all 0.3s",display:"flex",alignItems:"center",gap:"12px",borderRadius:ui.radius}}>
               <span style={{width:"24px",height:"24px",minWidth:"24px",border:`1px solid ${bc}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontFamily:"var(--font-display)",borderRadius:ui.radiusFull}}>
-                {ans&&i===q.correctIndex?"✓":ans&&i===sel?"✗":String.fromCharCode(65+i)}
-              </span>{c}
+                {ans&&c.id===q.correctId?"✓":ans&&c.id===selChoiceId?"✗":String.fromCharCode(65+i)}
+              </span>{c.text}
             </div>
           );
         })}
