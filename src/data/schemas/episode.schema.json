@@ -133,7 +133,7 @@
           "description": "確認テスト（3択×3問）",
           "items": {
             "type": "object",
-            "required": ["question", "choices", "correctIndex", "explanation"],
+            "required": ["question", "choices", "correctId", "explanation"],
             "additionalProperties": false,
             "properties": {
               "question": {
@@ -145,14 +145,29 @@
                 "type": "array",
                 "minItems": 3,
                 "maxItems": 4,
-                "items": { "type": "string", "minLength": 1 },
+                "items": {
+                  "type": "object",
+                  "required": ["id", "text"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z]$",
+                      "description": "選択肢ID（例: a, b, c）"
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "選択肢テキスト"
+                    }
+                  }
+                },
                 "description": "選択肢（3〜4択）"
               },
-              "correctIndex": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 3,
-                "description": "正解の選択肢インデックス（0始まり）"
+              "correctId": {
+                "type": "string",
+                "pattern": "^[a-z]$",
+                "description": "正解の選択肢ID（例: a, b, c）"
               },
               "explanation": {
                 "type": "string",
