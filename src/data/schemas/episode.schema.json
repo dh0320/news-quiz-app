@@ -1,0 +1,211 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://earth-observation-center.app/schemas/episode.json",
+  "title": "地球人調査センター エピソードスキーマ",
+  "description": "1エピソード分の学習コンテンツ（学習フェーズ＋確認テスト＋探究テスト）",
+  "type": "object",
+  "required": ["episodeId", "meta", "characters", "learningPhase", "testPhase"],
+  "additionalProperties": false,
+  "properties": {
+    "episodeId": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}-.+$",
+      "description": "エピソード一意ID（例: 2026-02-28-news-01）"
+    },
+    "meta": {
+      "type": "object",
+      "required": ["category", "subject", "title", "subtitle", "estimatedMinutes", "difficulty", "date"],
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": ["daily_news", "deep_dive", "special"],
+          "description": "カテゴリ種別"
+        },
+        "subject": {
+          "type": "string",
+          "description": "教科・分野（例: 経済, 政治, 科学, 社会）"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "エピソードタイトル"
+        },
+        "subtitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "サブタイトル（ゾルク博士視点の問い）"
+        },
+        "estimatedMinutes": {
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 30,
+          "description": "想定所要時間（分）"
+        },
+        "difficulty": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "難易度（1=易 〜 5=難）"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}$",
+          "description": "公開日（表示用: YYYY.MM.DD）"
+        }
+      }
+    },
+    "characters": {
+      "type": "object",
+      "required": ["teacher", "student"],
+      "additionalProperties": false,
+      "properties": {
+        "teacher": {
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "description": "教師キャラクター名" }
+          }
+        },
+        "student": {
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "description": "生徒キャラクター名" }
+          }
+        }
+      }
+    },
+    "learningPhase": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 30,
+      "description": "学習フェーズの対話（推奨23ターン前後）",
+      "items": {
+        "type": "object",
+        "required": ["speaker", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "speaker": {
+            "type": "string",
+            "enum": ["teacher", "student"],
+            "description": "発話者"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "description": "セリフ本文"
+          },
+          "supplement": {
+            "type": "object",
+            "required": ["type", "content"],
+            "additionalProperties": false,
+            "description": "補足情報（任意）",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["info", "warning", "quote", "data"],
+                "description": "補足の種類"
+              },
+              "content": {
+                "type": "string",
+                "minLength": 1,
+                "description": "補足テキスト"
+              }
+            }
+          }
+        }
+      }
+    },
+    "testPhase": {
+      "type": "object",
+      "required": ["confirm", "explore"],
+      "additionalProperties": false,
+      "properties": {
+        "confirm": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "確認テスト（3択×3問）",
+          "items": {
+            "type": "object",
+            "required": ["question", "choices", "correctIndex", "explanation"],
+            "additionalProperties": false,
+            "properties": {
+              "question": {
+                "type": "string",
+                "minLength": 1,
+                "description": "設問文"
+              },
+              "choices": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 4,
+                "items": { "type": "string", "minLength": 1 },
+                "description": "選択肢（3〜4択）"
+              },
+              "correctIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3,
+                "description": "正解の選択肢インデックス（0始まり）"
+              },
+              "explanation": {
+                "type": "string",
+                "minLength": 1,
+                "description": "解説文"
+              }
+            }
+          }
+        },
+        "explore": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "探究テスト（穴埋め×2問）",
+          "items": {
+            "type": "object",
+            "required": ["sentence", "answers", "wordBank", "explanation"],
+            "additionalProperties": false,
+            "properties": {
+              "sentence": {
+                "type": "string",
+                "pattern": "\\{\\{blank\\d+\\}\\}",
+                "description": "穴埋め文（{{blank1}}, {{blank2}}, ... で空欄を表す）"
+              },
+              "answers": {
+                "type": "object",
+                "minProperties": 1,
+                "patternProperties": {
+                  "^blank\\d+$": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "各空欄の正解ワード"
+                  }
+                },
+                "additionalProperties": false,
+                "description": "空欄IDと正解のマッピング"
+              },
+              "wordBank": {
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 15,
+                "items": { "type": "string", "minLength": 1 },
+                "description": "選択用ワードバンク（正解＋ダミーを含む）"
+              },
+              "explanation": {
+                "type": "string",
+                "minLength": 1,
+                "description": "解説文"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
