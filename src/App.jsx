@@ -14,9 +14,13 @@ import AdminDashboard from "./components/AdminDashboard.jsx";
 const PHASES = { HOME: "home", LEARNING: "learning", CONFIRM: "confirm", EXPLORE: "explore", RESULT: "result" };
 const isAdminPage = window.location.pathname === "/admin";
 
+// /admin パスなら管理ダッシュボードを表示（Hooksルール違反を避けるため分離）
 export default function App() {
-  // /admin パスなら管理ダッシュボードを表示
   if (isAdminPage) return <AdminDashboard />;
+  return <MainApp />;
+}
+
+function MainApp() {
   const [theme, setTheme] = useState(THEMES.cyber);
   const [phase, setPhase] = useState(PHASES.HOME);
   const [transition, setTransition] = useState(null);
