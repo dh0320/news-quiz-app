@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import fallbackEpisode from "../data/episodes/2026-02-28-news-01.json";
 
+function isValidEpisodeShape(data) {
+  return Array.isArray(data?.testPhase?.confirm) && Array.isArray(data?.testPhase?.explore);
+}
+
 /**
  * エピソードデータを動的に取得するフック
  * - Supabase接続時: episodesテーブルからfetch
@@ -55,6 +59,9 @@ export function useEpisode() {
 
         if (fetchError) {
           console.warn("[useEpisode] Supabase取得失敗、ローカルにフォールバック:", fetchError.message);
+          setEpisode(fallbackEpisode);
+        } else if (!isValidEpisodeShape(data?.data_json)) {
+          console.warn("[useEpisode] 取得データの形式が不正のためローカルにフォールバック");
           setEpisode(fallbackEpisode);
         } else {
           setEpisode(data.data_json);
