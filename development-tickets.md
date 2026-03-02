@@ -120,8 +120,8 @@ CREATE POLICY "Episodes are public" ON episodes
 3. モバイル: `navigator.share` 対応時はWeb Share API優先
 4. (任意) `@vercel/og` で動的OG画像
 
-### TICKET 2-2: いいねボタンの実装
-**ステータス: 未着手** / 依存: 1-3
+### ✅ TICKET 2-2: いいねボタンの実装
+**ステータス: 完了** (2026-03-02) / 依存: 1-3
 
 **対応内容:**
 1. ❤️ボタン（スケール+色変化アニメーション）
@@ -129,8 +129,8 @@ CREATE POLICY "Episodes are public" ON episodes
 3. いいね数表示（count機能）
 4. 1ユーザー1いいね（UNIQUE制約）
 
-### TICKET 2-3: 「みんなの結果を見る」画面の実装
-**ステータス: 未着手** / 依存: 1-3, 3-1
+### ✅ TICKET 2-3: 「みんなの結果を見る」画面の実装
+**ステータス: 完了** (2026-03-02) / 依存: 1-3, 3-1
 
 **対応内容:**
 1. StatsScreen（またはモーダル）
@@ -141,8 +141,8 @@ CREATE POLICY "Episodes are public" ON episodes
 
 ## EPIC 3: ユーザー集計・分析
 
-### TICKET 3-1: プレイデータの記録
-**ステータス: 未着手** / 依存: 1-3
+### ✅ TICKET 3-1: プレイデータの記録
+**ステータス: 完了** (2026-03-02) / 依存: 1-3
 
 **対応内容:**
 1. Learning開始時: `play_sessions` INSERT

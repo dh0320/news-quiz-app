@@ -1,9 +1,10 @@
-import { useState, useEffect, useContext } from "react";
-import { ShieldAlert, FlaskConical, ChevronRight } from "lucide-react";
+import { useState, useEffect, useContext, useCallback } from "react";
+import { ShieldAlert, FlaskConical, ChevronRight, Heart, Share2, BarChart3 } from "lucide-react";
 import { ThemeContext, tapProps } from "../context/ThemeContext.jsx";
 import { GlitchText, TBox, TitleDivider } from "./shared/index.jsx";
+import { useLike } from "../hooks/useLike.js";
 
-const ResultScreen = ({ episode, confirmScore, exploreScore, onHome }) => {
+const ResultScreen = ({ episode, confirmScore, exploreScore, onHome, onShowStats }) => {
   const t = useContext(ThemeContext);
   const ui = t.uiStyle;
   const lb = t.labels;
@@ -13,6 +14,33 @@ const ResultScreen = ({ episode, confirmScore, exploreScore, onHome }) => {
   useEffect(()=>{setTimeout(()=>setShow(1),300);setTimeout(()=>setShow(2),1000);setTimeout(()=>setShow(3),1800);},[]);
   const rank=totalScore===totalQ?"S":totalScore>=totalQ*0.8?"A":totalScore>=totalQ*0.5?"B":"C";
   const rc={S:"#ffd700",A:"var(--accent)",B:"var(--secondary)",C:"var(--text-dim)"}[rank];
+
+  // いいね
+  const { liked, likeCount, toggleLike, loading: likeLoading } = useLike(episode.episodeId);
+  const [likeAnim, setLikeAnim] = useState(false);
+  const handleLike = useCallback(() => {
+    if (likeLoading) return;
+    setLikeAnim(true);
+    setTimeout(() => setLikeAnim(false), 400);
+    toggleLike();
+  }, [toggleLike, likeLoading]);
+
+  // シェア
+  const shareText = `【地球人調査センター】\n${episode.meta.title}\nランク${rank} (${totalScore}/${totalQ}正解)\n#地球人調査センター`;
+  const handleShare = useCallback(async () => {
+    if (navigator.share) {
+      try { await navigator.share({ text: shareText }); } catch { /* キャンセル */ }
+    } else {
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, "_blank", "noopener");
+    }
+  }, [shareText]);
+
+  const btnBase = {
+    padding: "12px 24px",
+    fontFamily: "var(--font-display)", fontSize: "13px", letterSpacing: "0.15em",
+    cursor: "pointer", transition: "all 0.3s", borderRadius: ui.radius,
+    display: "inline-flex", alignItems: "center", gap: "8px",
+  };
 
   return (
     <div style={{minHeight:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 20px",position:"relative",overflow:"hidden"}}>
@@ -56,7 +84,7 @@ const ResultScreen = ({ episode, confirmScore, exploreScore, onHome }) => {
         <div style={{fontSize:"13px",color:"var(--text-dim)",fontFamily:"var(--font-display)"}}>{totalScore}/{totalQ} 正解</div>
       </div>
 
-      <TBox style={{width:"100%",maxWidth:"320px",marginBottom:"32px",opacity:show>=3?1:0,transform:show>=3?"none":"translateY(20px)",transition:"all 0.8s"}}>
+      <TBox style={{width:"100%",maxWidth:"320px",marginBottom:"24px",opacity:show>=3?1:0,transform:show>=3?"none":"translateY(20px)",transition:"all 0.8s"}}>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:"12px",fontSize:"13px"}}>
           <span style={{color:"var(--text-dim)",display:"flex",alignItems:"center",gap:"6px"}}><ShieldAlert size={13}/>確認（選択式）</span>
           <span style={{color:"var(--accent)",fontFamily:"var(--font-display)"}}>{confirmScore}/{episode.testPhase.confirm.length}</span>
@@ -67,12 +95,49 @@ const ResultScreen = ({ episode, confirmScore, exploreScore, onHome }) => {
         </div>
       </TBox>
 
+      {/* いいね + シェア + みんなの結果 */}
+      <div style={{
+        display:"flex", gap:"12px", marginBottom:"24px", flexWrap:"wrap", justifyContent:"center",
+        opacity:show>=3?1:0, transition:"all 0.8s",
+      }}>
+        {/* いいねボタン */}
+        <button onClick={handleLike} {...tapProps} style={{
+          ...btnBase,
+          background: liked ? "var(--accent)" : "transparent",
+          border: `${ui.borderWidth} ${ui.borderStyle} var(--accent)`,
+          color: liked ? "var(--bg)" : "var(--accent)",
+          transform: likeAnim ? "scale(1.15)" : "scale(1)",
+        }}>
+          <Heart size={16} fill={liked ? "currentColor" : "none"} />
+          {likeCount > 0 && <span>{likeCount}</span>}
+        </button>
+
+        {/* シェアボタン */}
+        <button onClick={handleShare} {...tapProps} style={{
+          ...btnBase,
+          background: "var(--accent)", color: "var(--bg)",
+          border: `${ui.borderWidth} ${ui.borderStyle} var(--accent)`,
+          fontWeight: "bold",
+        }}>
+          <Share2 size={16} />シェア
+        </button>
+
+        {/* みんなの結果ボタン */}
+        <button onClick={onShowStats} {...tapProps} style={{
+          ...btnBase,
+          background: "transparent", color: "var(--secondary)",
+          border: `${ui.borderWidth} ${ui.borderStyle} var(--secondary)`,
+        }}>
+          <BarChart3 size={16} />みんなの結果
+        </button>
+      </div>
+
       <button onClick={onHome} {...tapProps} style={{
+        ...btnBase,
         padding:"14px 40px",background:"transparent",
         border:`${ui.borderWidth} ${ui.borderStyle} var(--accent)`,color:"var(--accent)",
-        fontFamily:"var(--font-display)",fontSize:"13px",letterSpacing:"0.25em",
-        cursor:"pointer",transition:"all 0.3s",opacity:show>=3?1:0,borderRadius:ui.radius,
-        display:"inline-flex",alignItems:"center",gap:"6px",
+        letterSpacing:"0.25em",
+        opacity:show>=3?1:0,
       }}
         onMouseEnter={e=>{e.target.style.background="var(--accent)";e.target.style.color="var(--bg)";}}
         onMouseLeave={e=>{e.target.style.background="transparent";e.target.style.color="var(--accent)";}}
