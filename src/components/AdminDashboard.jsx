@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { LogOut, RefreshCw, Users, CheckCircle, Heart, TrendingUp, BookOpen } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useAdminStats } from "../hooks/useAdminStats.js";
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
   const [authChecked, setAuthChecked] = useState(false);
 
   // 初回: 既存セッションチェック
-  useState(() => {
+  useEffect(() => {
     if (!supabase) { setAuthChecked(true); return; }
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email && isAdmin(session.user.email)) {
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
       }
       setAuthChecked(true);
     });
-  });
+  }, [supabase]);
 
   const handleLogin = useCallback(async (email, password) => {
     if (!supabase) return { error: "Supabase未接続" };
