@@ -50,10 +50,11 @@ for (const filePath of files) {
         }
       }
     }
-    // 追加チェック: correctIndexがchoices範囲内か
+    // 追加チェック: correctIdがchoicesに存在するか
     for (const [i, cq] of data.testPhase.confirm.entries()) {
-      if (cq.correctIndex >= cq.choices.length) {
-        warnings.push(`confirm問題${i + 1}: correctIndex(${cq.correctIndex})がchoices数(${cq.choices.length})を超えています`);
+      const choiceIds = cq.choices.map((choice) => choice.id);
+      if (!choiceIds.includes(cq.correctId)) {
+        warnings.push(`confirm問題${i + 1}: correctId("${cq.correctId}")がchoices内に存在しません`);
       }
     }
 

@@ -4,7 +4,13 @@
   "title": "地球人調査センター エピソードスキーマ",
   "description": "1エピソード分の学習コンテンツ（学習フェーズ＋確認テスト＋探究テスト）",
   "type": "object",
-  "required": ["episodeId", "meta", "characters", "learningPhase", "testPhase"],
+  "required": [
+    "episodeId",
+    "meta",
+    "characters",
+    "learningPhase",
+    "testPhase"
+  ],
   "additionalProperties": false,
   "properties": {
     "episodeId": {
@@ -14,12 +20,24 @@
     },
     "meta": {
       "type": "object",
-      "required": ["category", "subject", "title", "subtitle", "estimatedMinutes", "difficulty", "date"],
+      "required": [
+        "category",
+        "subject",
+        "title",
+        "subtitle",
+        "estimatedMinutes",
+        "difficulty",
+        "date"
+      ],
       "additionalProperties": false,
       "properties": {
         "category": {
           "type": "string",
-          "enum": ["daily_news", "deep_dive", "special"],
+          "enum": [
+            "daily_news",
+            "deep_dive",
+            "special"
+          ],
           "description": "カテゴリ種別"
         },
         "subject": {
@@ -59,23 +77,36 @@
     },
     "characters": {
       "type": "object",
-      "required": ["teacher", "student"],
+      "required": [
+        "teacher",
+        "student"
+      ],
       "additionalProperties": false,
       "properties": {
         "teacher": {
           "type": "object",
-          "required": ["name"],
+          "required": [
+            "name"
+          ],
           "additionalProperties": false,
           "properties": {
-            "name": { "type": "string", "description": "教師キャラクター名" }
+            "name": {
+              "type": "string",
+              "description": "教師キャラクター名"
+            }
           }
         },
         "student": {
           "type": "object",
-          "required": ["name"],
+          "required": [
+            "name"
+          ],
           "additionalProperties": false,
           "properties": {
-            "name": { "type": "string", "description": "生徒キャラクター名" }
+            "name": {
+              "type": "string",
+              "description": "生徒キャラクター名"
+            }
           }
         }
       }
@@ -87,12 +118,18 @@
       "description": "学習フェーズの対話（推奨23ターン前後）",
       "items": {
         "type": "object",
-        "required": ["speaker", "text"],
+        "required": [
+          "speaker",
+          "text"
+        ],
         "additionalProperties": false,
         "properties": {
           "speaker": {
             "type": "string",
-            "enum": ["teacher", "student"],
+            "enum": [
+              "teacher",
+              "student"
+            ],
             "description": "発話者"
           },
           "text": {
@@ -102,13 +139,21 @@
           },
           "supplement": {
             "type": "object",
-            "required": ["type", "content"],
+            "required": [
+              "type",
+              "content"
+            ],
             "additionalProperties": false,
             "description": "補足情報（任意）",
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["info", "warning", "quote", "data"],
+                "enum": [
+                  "info",
+                  "warning",
+                  "quote",
+                  "data"
+                ],
                 "description": "補足の種類"
               },
               "content": {
@@ -123,7 +168,10 @@
     },
     "testPhase": {
       "type": "object",
-      "required": ["confirm", "explore"],
+      "required": [
+        "confirm",
+        "explore"
+      ],
       "additionalProperties": false,
       "properties": {
         "confirm": {
@@ -133,7 +181,12 @@
           "description": "確認テスト（3択×3問）",
           "items": {
             "type": "object",
-            "required": ["question", "choices", "correctIndex", "explanation"],
+            "required": [
+              "question",
+              "choices",
+              "correctId",
+              "explanation"
+            ],
             "additionalProperties": false,
             "properties": {
               "question": {
@@ -145,19 +198,37 @@
                 "type": "array",
                 "minItems": 3,
                 "maxItems": 4,
-                "items": { "type": "string", "minLength": 1 },
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "text"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-d]$",
+                      "description": "選択肢ID（a〜d）"
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "選択肢テキスト"
+                    }
+                  }
+                },
                 "description": "選択肢（3〜4択）"
-              },
-              "correctIndex": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 3,
-                "description": "正解の選択肢インデックス（0始まり）"
               },
               "explanation": {
                 "type": "string",
                 "minLength": 1,
                 "description": "解説文"
+              },
+              "correctId": {
+                "type": "string",
+                "pattern": "^[a-d]$",
+                "description": "正解の選択肢ID（a〜d）"
               }
             }
           }
@@ -169,7 +240,12 @@
           "description": "探究テスト（穴埋め×2問）",
           "items": {
             "type": "object",
-            "required": ["sentence", "answers", "wordBank", "explanation"],
+            "required": [
+              "sentence",
+              "answers",
+              "wordBank",
+              "explanation"
+            ],
             "additionalProperties": false,
             "properties": {
               "sentence": {
@@ -194,7 +270,10 @@
                 "type": "array",
                 "minItems": 6,
                 "maxItems": 15,
-                "items": { "type": "string", "minLength": 1 },
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
                 "description": "選択用ワードバンク（正解＋ダミーを含む）"
               },
               "explanation": {
