@@ -1,5 +1,5 @@
-import { useState, useEffect, useContext } from "react";
-import { ShieldAlert, FlaskConical, ChevronRight } from "lucide-react";
+import { useState, useEffect, useContext, useCallback } from "react";
+import { ShieldAlert, FlaskConical, ChevronRight, Share2 } from "lucide-react";
 import { ThemeContext, tapProps } from "../context/ThemeContext.jsx";
 import { GlitchText, TBox, TitleDivider } from "./shared/index.jsx";
 
@@ -13,6 +13,15 @@ const ResultScreen = ({ episode, confirmScore, exploreScore, onHome }) => {
   useEffect(()=>{setTimeout(()=>setShow(1),300);setTimeout(()=>setShow(2),1000);setTimeout(()=>setShow(3),1800);},[]);
   const rank=totalScore===totalQ?"S":totalScore>=totalQ*0.8?"A":totalScore>=totalQ*0.5?"B":"C";
   const rc={S:"#ffd700",A:"var(--accent)",B:"var(--secondary)",C:"var(--text-dim)"}[rank];
+
+  const shareText = `【地球人調査センター】\n${episode.meta.title}\nランク${rank} (${totalScore}/${totalQ}正解)\n#地球人調査センター`;
+  const handleShare = useCallback(async () => {
+    if (navigator.share) {
+      try { await navigator.share({ text: shareText }); } catch { /* ユーザーがキャンセル */ }
+    } else {
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, "_blank", "noopener");
+    }
+  }, [shareText]);
 
   return (
     <div style={{minHeight:"100dvh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 20px",position:"relative",overflow:"hidden"}}>
@@ -66,6 +75,17 @@ const ResultScreen = ({ episode, confirmScore, exploreScore, onHome }) => {
           <span style={{color:"var(--secondary)",fontFamily:"var(--font-display)"}}>{exploreScore}/{episode.testPhase.explore.length}</span>
         </div>
       </TBox>
+
+      <button onClick={handleShare} {...tapProps} style={{
+        padding:"14px 40px",background:"var(--accent)",
+        border:`${ui.borderWidth} ${ui.borderStyle} var(--accent)`,color:"var(--bg)",
+        fontFamily:"var(--font-display)",fontSize:"13px",letterSpacing:"0.25em",
+        cursor:"pointer",transition:"all 0.3s",opacity:show>=3?1:0,borderRadius:ui.radius,
+        display:"inline-flex",alignItems:"center",gap:"8px",marginBottom:"12px",
+        fontWeight:"bold",
+      }}>
+        <Share2 size={16} />シェアする
+      </button>
 
       <button onClick={onHome} {...tapProps} style={{
         padding:"14px 40px",background:"transparent",
