@@ -2,6 +2,26 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import fallbackEpisode from "../data/episodes/2026-02-28-news-01.json";
 
+const localEpisodeModules = import.meta.glob("../data/episodes/*.json", { eager: true });
+
+function getLocalEpisodes() {
+  return Object.values(localEpisodeModules)
+    .map((mod) => mod.default)
+    .filter(isValidEpisodeShape)
+    .sort((a, b) => b.episodeId.localeCompare(a.episodeId));
+}
+
+function resolveLocalEpisode(epParam) {
+  const localEpisodes = getLocalEpisodes();
+
+  if (epParam) {
+    const matched = localEpisodes.find((ep) => ep.episodeId === epParam);
+    if (matched) return matched;
+  }
+
+  return localEpisodes[0] ?? fallbackEpisode;
+}
+
 function isValidEpisodeShape(data) {
   return Array.isArray(data?.testPhase?.confirm) && Array.isArray(data?.testPhase?.explore);
 }
@@ -23,9 +43,9 @@ export function useEpisode() {
     const params = new URLSearchParams(window.location.search);
     const epParam = params.get("ep");
 
-    // Supabase未接続 → ローカルJSONフォールバック
+    // Supabase未接続 → ローカルJSONを最新順で選択
     if (!supabase) {
-      setEpisode(fallbackEpisode);
+      setEpisode(resolveLocalEpisode(epParam));
       setLoading(false);
       return;
     }
@@ -59,17 +79,17 @@ export function useEpisode() {
 
         if (fetchError) {
           console.warn("[useEpisode] Supabase取得失敗、ローカルにフォールバック:", fetchError.message);
-          setEpisode(fallbackEpisode);
+          setEpisode(resolveLocalEpisode(epParam));
         } else if (!isValidEpisodeShape(data?.data_json)) {
           console.warn("[useEpisode] 取得データの形式が不正のためローカルにフォールバック");
-          setEpisode(fallbackEpisode);
+          setEpisode(resolveLocalEpisode(epParam));
         } else {
           setEpisode(data.data_json);
         }
       } catch (e) {
         if (cancelled) return;
         console.warn("[useEpisode] 予期しないエラー、ローカルにフォールバック:", e.message);
-        setEpisode(fallbackEpisode);
+        setEpisode(resolveLocalEpisode(epParam));
       } finally {
         if (!cancelled) setLoading(false);
       }

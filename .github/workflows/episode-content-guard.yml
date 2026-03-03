@@ -1,0 +1,51 @@
+name: Episode Content Guard
+
+on:
+  pull_request:
+    paths:
+      - 'src/data/episodes/**/*.json'
+      - 'src/data/schemas/episode.schema.json'
+      - 'scripts/validate-episode.mjs'
+      - 'scripts/check-episodes.mjs'
+      - '.github/workflows/episode-content-guard.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/data/episodes/**/*.json'
+      - 'src/data/schemas/episode.schema.json'
+      - 'scripts/validate-episode.mjs'
+      - 'scripts/check-episodes.mjs'
+
+jobs:
+  validate-episodes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: JSON schema validation
+        run: npm run validate
+
+      - name: Naming/ID/date consistency checks
+        run: node scripts/check-episodes.mjs
+
+      - name: Policy gate summary
+        if: ${{ failure() }}
+        run: |
+          echo '❌ エピソード公開ゲートを通過できませんでした。'
+          echo '- JSONスキーマ不一致'
+          echo '- ファイル名/episodeId不一致'
+          echo '- episodeId重複'
+          echo '- meta.date形式不一致'
+          echo 'を確認してください。'
