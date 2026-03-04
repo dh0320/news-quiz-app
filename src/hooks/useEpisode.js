@@ -4,18 +4,34 @@ import fallbackEpisode from "../data/episodes/2026-02-28-news-01.json";
 
 const localEpisodeModules = import.meta.glob("../data/episodes/*.json", { eager: true });
 
-function getLocalEpisodes() {
-  return Object.values(localEpisodeModules)
+function normalizeGenre(genre) {
+  return genre && genre !== "all" ? genre : null;
+}
+
+function filterEpisodesByGenre(episodes, selectedGenre) {
+  const genre = normalizeGenre(selectedGenre);
+  if (!genre) return episodes;
+  return episodes.filter((episode) => episode?.meta?.genre === genre);
+}
+
+function getLocalEpisodes(selectedGenre) {
+  const localEpisodes = Object.values(localEpisodeModules)
     .map((mod) => mod.default)
     .filter(isValidEpisodeShape)
     .sort((a, b) => b.episodeId.localeCompare(a.episodeId));
+
+  const filteredEpisodes = filterEpisodesByGenre(localEpisodes, selectedGenre);
+  return filteredEpisodes.length > 0 ? filteredEpisodes : localEpisodes;
 }
 
-function resolveLocalEpisode(epParam) {
-  const localEpisodes = getLocalEpisodes();
+function resolveLocalEpisode(epParam, selectedGenre) {
+  const localEpisodes = getLocalEpisodes(selectedGenre);
 
   if (epParam) {
-    const matched = localEpisodes.find((ep) => ep.episodeId === epParam);
+    const matched = Object.values(localEpisodeModules)
+      .map((mod) => mod.default)
+      .filter(isValidEpisodeShape)
+      .find((ep) => ep.episodeId === epParam);
     if (matched) return matched;
   }
 
@@ -31,9 +47,10 @@ function isValidEpisodeShape(data) {
  * - Supabase接続時: episodesテーブルからfetch
  * - 未接続時: ローカルJSONにフォールバック
  * - ?ep=XXXX で特定エピソード指定可能
+ * @param {string} selectedGenre 選択されたジャンル（all の場合は全件対象）
  * @returns {{ episode: object|null, loading: boolean, error: string|null }}
  */
-export function useEpisode() {
+export function useEpisode(selectedGenre = "all") {
   const { supabase } = useAuth();
   const [episode, setEpisode] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +62,7 @@ export function useEpisode() {
 
     // Supabase未接続 → ローカルJSONを最新順で選択
     if (!supabase) {
-      setEpisode(resolveLocalEpisode(epParam));
+      setEpisode(resolveLocalEpisode(epParam, selectedGenre));
       setLoading(false);
       return;
     }
@@ -63,14 +80,13 @@ export function useEpisode() {
             .eq("episode_id", epParam)
             .single();
         } else {
-          // 最新の公開済みエピソードを取得
+          // 公開済みエピソード候補を取得してクライアント側でジャンル絞り込み
           query = supabase
             .from("episodes")
             .select("data_json")
             .not("published_at", "is", null)
             .order("published_at", { ascending: false })
-            .limit(1)
-            .single();
+            .limit(20);
         }
 
         const { data, error: fetchError } = await query;
@@ -79,24 +95,33 @@ export function useEpisode() {
 
         if (fetchError) {
           console.warn("[useEpisode] Supabase取得失敗、ローカルにフォールバック:", fetchError.message);
-          setEpisode(resolveLocalEpisode(epParam));
-        } else if (!isValidEpisodeShape(data?.data_json)) {
-          console.warn("[useEpisode] 取得データの形式が不正のためローカルにフォールバック");
-          setEpisode(resolveLocalEpisode(epParam));
+          setEpisode(resolveLocalEpisode(epParam, selectedGenre));
+        } else if (epParam) {
+          if (!isValidEpisodeShape(data?.data_json)) {
+            console.warn("[useEpisode] 取得データの形式が不正のためローカルにフォールバック");
+            setEpisode(resolveLocalEpisode(epParam, selectedGenre));
+          } else {
+            setEpisode(data.data_json);
+          }
         } else {
-          setEpisode(data.data_json);
+          const candidates = Array.isArray(data)
+            ? data.map((row) => row?.data_json).filter(isValidEpisodeShape)
+            : [];
+          const filteredCandidates = filterEpisodesByGenre(candidates, selectedGenre);
+          const resolvedEpisode = (filteredCandidates[0] ?? candidates[0]) || resolveLocalEpisode(null, selectedGenre);
+          setEpisode(resolvedEpisode);
         }
       } catch (e) {
         if (cancelled) return;
         console.warn("[useEpisode] 予期しないエラー、ローカルにフォールバック:", e.message);
-        setEpisode(resolveLocalEpisode(epParam));
+        setEpisode(resolveLocalEpisode(epParam, selectedGenre));
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
 
     return () => { cancelled = true; };
-  }, [supabase]);
+  }, [selectedGenre, supabase]);
 
   return { episode, loading, error };
 }
