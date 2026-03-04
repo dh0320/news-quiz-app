@@ -49,6 +49,26 @@
   - `career_workstyle`
 - `meta.category`（`daily_news` / `deep_dive` / `special`）は配信カテゴリで、`genre` とは別軸として扱う
 
+### 4-1.6. DB同期ルール（`data_json.meta.genre` と `episodes.genre`）
+- Supabaseの `episodes` へ追加/更新する際は、**必ず同一トランザクションで** `data_json.meta.genre` と `genre` 列を同じ値にする
+- `genre` は `all` を保存しない（`all` はUI専用）
+- 追加・更新SQLの例:
+
+```sql
+INSERT INTO episodes (episode_id, data_json, genre, published_at)
+VALUES (
+  :episode_id,
+  :data_json,
+  :data_json->'meta'->>'genre',
+  :published_at
+)
+ON CONFLICT (episode_id)
+DO UPDATE SET
+  data_json = EXCLUDED.data_json,
+  genre = EXCLUDED.genre,
+  published_at = EXCLUDED.published_at;
+```
+
 ### 4-2. 公開単位
 - 1 PR = 原則1エピソード
 - スキーマ更新PRとコンテンツ更新PRは分離
@@ -71,6 +91,7 @@
 - [ ] ファイル名が規則通り
 - [ ] `episodeId` が一致
 - [ ] `meta.subject`（表示用）と `meta.genre`（フィルタ用）が用途どおり設定されている
+- [ ] Supabase反映時に `data_json.meta.genre` と `episodes.genre` を同時更新している
 - [ ] `npm run validate` 成功
 - [ ] `node scripts/check-episodes.mjs` 成功
 - [ ] 内容レビュー（事実・日本語・難易度）完了
