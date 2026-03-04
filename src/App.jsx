@@ -30,7 +30,7 @@ function MainApp() {
   const [showStats, setShowStats] = useState(false);
   const sessionIdRef = useRef(null);
   const { user, supabase } = useAuth();
-  const { episode, loading: episodeLoading } = useEpisode();
+  const { episode, loading: episodeLoading } = useEpisode(selectedGenre);
 
   // プレイセッション: INSERT（Learning開始時）
   const createSession = useCallback(async () => {
