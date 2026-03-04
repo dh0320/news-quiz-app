@@ -36,6 +36,7 @@ function MainApp() {
   const createSession = useCallback(async () => {
     if (!supabase || !user || !episode) return;
     try {
+      if (sessionIdRef.current) return;
       const { data, error } = await supabase
         .from("play_sessions")
         .insert({ episode_id: episode.episodeId, user_id: user.id })
@@ -47,14 +48,25 @@ function MainApp() {
 
   // プレイセッション: UPDATE（スコア記録）
   const updateSession = useCallback(async (fields) => {
-    if (!supabase || !sessionIdRef.current) return;
+    if (!supabase || !user || !episode) return;
     try {
+      // セッション未作成のまま更新フェーズに入るケースを救済
+      if (!sessionIdRef.current) {
+        const { data, error } = await supabase
+          .from("play_sessions")
+          .insert({ episode_id: episode.episodeId, user_id: user.id })
+          .select("id")
+          .single();
+        if (error || !data?.id) return;
+        sessionIdRef.current = data.id;
+      }
+
       await supabase
         .from("play_sessions")
         .update(fields)
         .eq("id", sessionIdRef.current);
     } catch { /* UX最優先 */ }
-  }, [supabase]);
+  }, [supabase, user, episode]);
 
   const goPhase = (next, label, sublabel) => setTransition({ label, sublabel, next });
   const doneTrans = () => { setPhase(transition.next); setTransition(null); };
