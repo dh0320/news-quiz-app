@@ -31,6 +31,7 @@ export const BASE_UI = {
 export const BASE_LABELS = {
   todayCase: "TODAY'S REPORT",
   recentCases: "RECENT REPORTS",
+  genreFilter: "ジャンルフィルター",
   startButton: "調査を開始する",
   streak: "▸ 連続7日目",
   caseClosedTitle: "調査完了",
@@ -186,6 +187,7 @@ export const THEMES = {
       ...BASE_LABELS,
       todayCase: "★ TODAY ★",
       recentCases: "☆ PAST ☆",
+      genreFilter: "☆ GENRE ☆",
       startButton: ">> START <<",
       streak: "★ 7日連続 ★",
       investigationLabel: ">> OBSERVATION <<",
