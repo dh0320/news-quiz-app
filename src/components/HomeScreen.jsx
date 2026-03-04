@@ -50,15 +50,23 @@ const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange, selectedGen
 
     const fetchRecentCases = async () => {
       try {
-        const { data: sessions } = await supabase
+        const { data: sessions, error: sessionsError } = await supabase
           .from("play_sessions")
           .select("episode_id, completed, completed_at, created_at")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(20);
 
+        if (sessionsError) {
+          console.warn("[HomeScreen] Supabase fetch error:", sessionsError.message);
+          loadLocalHistory();
+          setHistoryNotice("※ サーバー履歴の取得に失敗したためローカル履歴を表示しています");
+          return;
+        }
+
         if (!sessions || sessions.length === 0) {
-          setRecentCases([]);
+          // Supabase にデータがない場合、ローカル履歴にフォールバック
+          loadLocalHistory();
           return;
         }
 
