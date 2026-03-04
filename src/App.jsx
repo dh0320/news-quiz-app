@@ -11,6 +11,8 @@ import ResultScreen from "./components/ResultScreen.jsx";
 import StatsScreen from "./components/StatsScreen.jsx";
 import AdminDashboard from "./components/AdminDashboard.jsx";
 
+const LOCAL_HISTORY_KEY = "newsQuizRecentHistory";
+
 const PHASES = { HOME: "home", LEARNING: "learning", CONFIRM: "confirm", EXPLORE: "explore", RESULT: "result" };
 const isAdminPage = window.location.pathname === "/admin";
 
@@ -32,29 +34,56 @@ function MainApp() {
   const { user, supabase } = useAuth();
   const { episode, loading: episodeLoading } = useEpisode(selectedGenre);
 
+  const saveLocalHistory = useCallback((payload) => {
+    try {
+      const raw = localStorage.getItem(LOCAL_HISTORY_KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      const next = [payload, ...list].slice(0, 20);
+      localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(next));
+    } catch {
+      // no-op
+    }
+  }, []);
+
   // プレイセッション: INSERT（Learning開始時）
   const createSession = useCallback(async () => {
     if (!supabase || !user || !episode) return;
     try {
+      if (sessionIdRef.current) return;
       const { data, error } = await supabase
         .from("play_sessions")
         .insert({ episode_id: episode.episodeId, user_id: user.id })
         .select("id")
         .single();
       if (!error) sessionIdRef.current = data.id;
-    } catch { /* UX最優先: エラー時はローカルのみで続行 */ }
+    } catch (e) {
+      console.error("[play_sessions] createSession failed:", e?.message ?? e);
+    }
   }, [supabase, user, episode]);
 
   // プレイセッション: UPDATE（スコア記録）
   const updateSession = useCallback(async (fields) => {
-    if (!supabase || !sessionIdRef.current) return;
+    if (!supabase || !user || !episode) return;
     try {
+      // セッション未作成のまま更新フェーズに入るケースを救済
+      if (!sessionIdRef.current) {
+        const { data, error } = await supabase
+          .from("play_sessions")
+          .insert({ episode_id: episode.episodeId, user_id: user.id })
+          .select("id")
+          .single();
+        if (error || !data?.id) return;
+        sessionIdRef.current = data.id;
+      }
+
       await supabase
         .from("play_sessions")
         .update(fields)
         .eq("id", sessionIdRef.current);
-    } catch { /* UX最優先 */ }
-  }, [supabase]);
+    } catch (e) {
+      console.error("[play_sessions] updateSession failed:", e?.message ?? e);
+    }
+  }, [supabase, user, episode]);
 
   const goPhase = (next, label, sublabel) => setTransition({ label, sublabel, next });
   const doneTrans = () => { setPhase(transition.next); setTransition(null); };
@@ -72,6 +101,13 @@ function MainApp() {
   };
   const handleExploreDone = (score) => {
     setExScore(score);
+    saveLocalHistory({
+      episode_id: episode.episodeId,
+      title: episode.meta.title,
+      completed: true,
+      completed_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    });
     updateSession({
       explore_score: score,
       explore_total: episode.testPhase.explore.length,
