@@ -59,9 +59,11 @@
 3. `meta.subject` は表示用ラベル、`meta.genre` はフィルタ用の内部IDとして必ず分けて設定
    - `category`（`daily_news` / `deep_dive` / `special`）は配信種別として別軸で維持
    - `genre` は以下のいずれかを指定: `politics_policy` / `economy_finance` / `entertainment_culture` / `tech_ai` / `career_workstyle`
-4. 必要に応じてバリデーション実行  
+4. Supabaseへ登録/更新する場合は `data_json.meta.genre` と `episodes.genre` を同時更新（同値）する
+   - `genre` 列は `all` を許容しないため、5ジャンルIDのいずれかを保存
+5. 必要に応じてバリデーション実行  
    - `scripts/validate-episode.mjs`
-5. ローカルで表示確認後にデプロイ
+6. ローカルで表示確認後にデプロイ
 
 ### 3-2. Supabaseスキーマ管理
 
@@ -71,6 +73,8 @@ DB変更は migration SQL で管理します。
 - `supabase/migrations/002_stats_policies.sql`
 - `supabase/migrations/003_update_sample_episode_full_data.sql`
 - `supabase/migrations/004_admin_stats_functions.sql`
+- `supabase/migrations/005_migrate_confirm_choices_and_correct_id.sql`
+- `supabase/migrations/006_add_episode_genre_column.sql`
 
 #### 運用ルール（推奨）
 - スキーマ変更は必ず新規 migration を追加

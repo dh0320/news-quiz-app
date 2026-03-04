@@ -80,13 +80,18 @@ export function useEpisode(selectedGenre = "all") {
             .eq("episode_id", epParam)
             .single();
         } else {
-          // 公開済みエピソード候補を取得してクライアント側でジャンル絞り込み
+          // 公開済みエピソード候補を取得（genre指定時はDB側で絞り込み）
+          const normalizedGenre = normalizeGenre(selectedGenre);
           query = supabase
             .from("episodes")
             .select("data_json")
             .not("published_at", "is", null)
             .order("published_at", { ascending: false })
             .limit(20);
+
+          if (normalizedGenre) {
+            query = query.eq("genre", normalizedGenre);
+          }
         }
 
         const { data, error: fetchError } = await query;
@@ -107,8 +112,7 @@ export function useEpisode(selectedGenre = "all") {
           const candidates = Array.isArray(data)
             ? data.map((row) => row?.data_json).filter(isValidEpisodeShape)
             : [];
-          const filteredCandidates = filterEpisodesByGenre(candidates, selectedGenre);
-          const resolvedEpisode = (filteredCandidates[0] ?? candidates[0]) || resolveLocalEpisode(null, selectedGenre);
+          const resolvedEpisode = candidates[0] || resolveLocalEpisode(null, selectedGenre);
           setEpisode(resolvedEpisode);
         }
       } catch (e) {
