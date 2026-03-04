@@ -6,27 +6,54 @@ import { GlitchText, TBox, TitleDivider } from "./shared/index.jsx";
 import ThemeSelector from "./ThemeSelector.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
+const LOCAL_HISTORY_KEY = "newsQuizRecentHistory";
+
 const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange, selectedGenre, onGenreChange }) => {
   const t = useContext(ThemeContext);
   const ui = t.uiStyle;
   const lb = t.labels;
-  const { user, supabase } = useAuth();
+  const { user, supabase, loading: authLoading } = useAuth();
   const [show, setShow] = useState(false);
   const [recentCases, setRecentCases] = useState([]);
+  const [historyNotice, setHistoryNotice] = useState("");
 
   useEffect(() => { setTimeout(() => setShow(true), 100); }, []);
 
   useEffect(() => {
+    const loadLocalHistory = () => {
+      try {
+        const raw = localStorage.getItem(LOCAL_HISTORY_KEY);
+        const localList = raw ? JSON.parse(raw) : [];
+        const list = Array.isArray(localList) ? localList : [];
+        const cases = list.slice(0, 3).map((s) => ({
+          title: s.title ?? s.episode_id ?? "(untitled)",
+          date: (() => {
+            const d = new Date(s.completed_at ?? s.created_at);
+            if (Number.isNaN(d.getTime())) return "--.--";
+            return `${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+          })(),
+          completed: !!s.completed,
+        }));
+        setRecentCases(cases);
+      } catch {
+        setRecentCases([]);
+      }
+    };
+
     if (!supabase || !user) {
-      setRecentCases([]);
+      loadLocalHistory();
+      setHistoryNotice("※ 履歴は端末ローカル表示です（Supabase未接続または認証待ち）");
       return;
     }
+
+    setHistoryNotice("");
 
     const fetchRecentCases = async () => {
       try {
         const { data: sessions } = await supabase
           .from("play_sessions")
           .select("episode_id, completed, completed_at, created_at")
+          .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(20);
 
@@ -73,7 +100,8 @@ const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange, selectedGen
 
         setRecentCases(cases);
       } catch {
-        setRecentCases([]);
+        loadLocalHistory();
+        setHistoryNotice("※ サーバー履歴の取得に失敗したためローカル履歴を表示しています");
       }
     };
 
@@ -139,6 +167,7 @@ const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange, selectedGen
       </div>
 
       <div style={{ fontSize:"10px",letterSpacing:"0.2em",color:"var(--text-dim)",fontFamily:"var(--font-display)",marginBottom:"10px" }}>{lb.recentCases}</div>
+      {historyNotice && !authLoading && <div style={{ fontSize: "10px", color: "var(--text-dim)", marginBottom: "8px" }}>{historyNotice}</div>}
       {(recentCases.length > 0 ? recentCases : [{ title: "履歴がまだありません", date: "--.--", completed: false }]).map((ep,i)=>(
         <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px",borderBottom:"1px solid var(--border)",fontSize:"13px"}}>
           <div><div style={{color:"var(--text)",marginBottom:"2px"}}>{ep.title}</div><div style={{fontSize:"10px",color:"var(--text-dim)"}}>{ep.date}</div></div>
