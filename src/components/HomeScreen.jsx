@@ -1,17 +1,9 @@
 import { useState, useEffect, useContext } from "react";
 import { Clock, FolderOpen, Telescope } from "lucide-react";
 import { ThemeContext, tapProps } from "../context/ThemeContext.jsx";
+import { GENRES, getGenreById } from "../constants/genres.js";
 import { GlitchText, TBox, TitleDivider } from "./shared/index.jsx";
 import ThemeSelector from "./ThemeSelector.jsx";
-
-const GENRES = [
-  { id: "all", label: "すべて" },
-  { id: "politics_policy", label: "政治・政策" },
-  { id: "economy_finance", label: "経済・金融" },
-  { id: "entertainment_culture", label: "エンタメ・カルチャー（映画/音楽/配信）" },
-  { id: "tech_ai", label: "テック・AI" },
-  { id: "career_workstyle", label: "キャリア・働き方" },
-];
 
 const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange, selectedGenre, onGenreChange }) => {
   const t = useContext(ThemeContext);
@@ -43,10 +35,11 @@ const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange, selectedGen
         <div style={{ fontFamily: "var(--font-display)", fontSize: "18px", color: "var(--primary)", marginBottom: "6px", lineHeight: 1.5, fontWeight: ui.fontWeightHeading }}>{episode.meta.title}</div>
         <div style={{ fontSize: "12px", color: "var(--text-dim)", marginBottom: "12px", fontStyle: ui.italicSubtitle ? "italic" : "normal" }}>{episode.meta.subtitle}</div>
         <div style={{ display: "flex", gap: "12px", fontSize: "11px", color: "var(--text-dim)", flexWrap: "wrap", alignItems: "center" }}>
-          <span style={{ display: "flex", alignItems: "center", gap: "3px" }}><Clock size={12} /> 約{episode.meta.estimatedMinutes}分</span><span style={{ display: "flex", alignItems: "center", gap: "3px" }}><FolderOpen size={12} /> {episode.meta.subject}</span><span>{"◆".repeat(episode.meta.difficulty)}{"◇".repeat(5-episode.meta.difficulty)}</span>
+          <span style={{ display: "flex", alignItems: "center", gap: "3px" }}><Clock size={12} /> 約{episode.meta.estimatedMinutes}分</span><span style={{ display: "flex", alignItems: "center", gap: "3px" }}><FolderOpen size={12} /> {getGenreById(episode.meta.genre)?.shortLabel ?? episode.meta.subject}</span><span>{"◆".repeat(episode.meta.difficulty)}{"◇".repeat(5-episode.meta.difficulty)}</span>
         </div>
       </TBox>
 
+      <div style={{ fontSize: "10px", letterSpacing: "0.2em", color: "var(--text-dim)", fontFamily: "var(--font-display)", marginBottom: "10px" }}>{lb.genreFilter}</div>
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
         {GENRES.map((genre) => {
           const isSelected = selectedGenre === genre.id;
