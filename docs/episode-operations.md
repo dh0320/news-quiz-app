@@ -39,6 +39,16 @@
 - `episodeId`: ファイル名と完全一致（拡張子除く）
 - 同日で複数本なら末尾を `-02`, `-03` で連番
 
+### 4-1.5. メタ情報（subject / genre / category）の役割
+- `meta.subject`: 画面表示用ラベル（例: 経済, 政治）
+- `meta.genre`: フィルタ用の内部ID（以下の5値のみ）
+  - `politics_policy`
+  - `economy_finance`
+  - `entertainment_culture`
+  - `tech_ai`
+  - `career_workstyle`
+- `meta.category`（`daily_news` / `deep_dive` / `special`）は配信カテゴリで、`genre` とは別軸として扱う
+
 ### 4-2. 公開単位
 - 1 PR = 原則1エピソード
 - スキーマ更新PRとコンテンツ更新PRは分離
@@ -60,6 +70,7 @@
 
 - [ ] ファイル名が規則通り
 - [ ] `episodeId` が一致
+- [ ] `meta.subject`（表示用）と `meta.genre`（フィルタ用）が用途どおり設定されている
 - [ ] `npm run validate` 成功
 - [ ] `node scripts/check-episodes.mjs` 成功
 - [ ] 内容レビュー（事実・日本語・難易度）完了
