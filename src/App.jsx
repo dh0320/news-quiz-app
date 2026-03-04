@@ -22,6 +22,7 @@ export default function App() {
 
 function MainApp() {
   const [theme, setTheme] = useState(THEMES.cyber);
+  const [selectedGenre, setSelectedGenre] = useState("all");
   const [phase, setPhase] = useState(PHASES.HOME);
   const [transition, setTransition] = useState(null);
   const [cfScore, setCfScore] = useState(0);
@@ -125,7 +126,16 @@ function MainApp() {
             </div>
           ) : (
             <>
-              {phase === PHASES.HOME && <HomeScreen episode={episode} onStart={handleStart} currentTheme={theme} onThemeChange={setTheme} />}
+              {phase === PHASES.HOME && (
+                <HomeScreen
+                  episode={episode}
+                  onStart={handleStart}
+                  currentTheme={theme}
+                  onThemeChange={setTheme}
+                  selectedGenre={selectedGenre}
+                  onGenreChange={setSelectedGenre}
+                />
+              )}
               {phase === PHASES.LEARNING && <LearningScreen episode={episode} onComplete={() => goPhase(PHASES.CONFIRM, "確認", "CONFIRM PHASE")} />}
               {phase === PHASES.CONFIRM && <ConfirmScreen episode={episode} onScore={handleConfirmDone} onComplete={() => {}} />}
               {phase === PHASES.EXPLORE && <ExploreScreen episode={episode} onScore={handleExploreDone} onComplete={() => {}} />}

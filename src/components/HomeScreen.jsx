@@ -4,7 +4,16 @@ import { ThemeContext, tapProps } from "../context/ThemeContext.jsx";
 import { GlitchText, TBox, TitleDivider } from "./shared/index.jsx";
 import ThemeSelector from "./ThemeSelector.jsx";
 
-const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange }) => {
+const GENRES = [
+  { id: "all", label: "すべて" },
+  { id: "politics_policy", label: "政治・政策" },
+  { id: "economy_finance", label: "経済・金融" },
+  { id: "entertainment_culture", label: "エンタメ・カルチャー（映画/音楽/配信）" },
+  { id: "tech_ai", label: "テック・AI" },
+  { id: "career_workstyle", label: "キャリア・働き方" },
+];
+
+const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange, selectedGenre, onGenreChange }) => {
   const t = useContext(ThemeContext);
   const ui = t.uiStyle;
   const lb = t.labels;
@@ -38,13 +47,34 @@ const HomeScreen = ({ episode, onStart, currentTheme, onThemeChange }) => {
         </div>
       </TBox>
 
-      <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
-        {[{id:"daily_news",label:"時事"},{id:"subject",label:"単元"},{id:"trending",label:"流行"}].map((cat,i)=>(
-          <div key={cat.id} style={{ flex:1,padding:"10px 8px",textAlign:"center",border:`1px solid ${i===0?"var(--accent)":"var(--border)"}`,background:i===0?"var(--accent-glow)":"var(--surface)",fontSize:"12px",color:i===0?"var(--accent)":"var(--text-dim)",cursor:"pointer",transition:"all 0.2s",borderRadius:ui.radius }} {...tapProps}>
-            <div style={{fontSize:"18px",marginBottom:"4px"}}>{lb.categoryIcons[i]}</div>
-            <div style={{fontFamily:"var(--font-display)",letterSpacing:"0.1em"}}>{cat.label}</div>
-          </div>
-        ))}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
+        {GENRES.map((genre) => {
+          const isSelected = selectedGenre === genre.id;
+          return (
+            <button
+              key={genre.id}
+              type="button"
+              onClick={() => onGenreChange(genre.id)}
+              style={{
+                padding: "10px 12px",
+                textAlign: "center",
+                border: `${ui.borderWidth} ${ui.borderStyle} ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                background: isSelected ? "var(--accent-glow)" : "var(--surface)",
+                fontSize: "12px",
+                color: isSelected ? "var(--accent)" : "var(--text-dim)",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                borderRadius: ui.radius,
+                fontFamily: "var(--font-display)",
+                letterSpacing: "0.06em",
+                boxShadow: isSelected ? "0 0 0 1px var(--accent), 0 0 12px var(--accent-glow)" : "none",
+              }}
+              {...tapProps}
+            >
+              {genre.label}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ fontSize:"10px",letterSpacing:"0.2em",color:"var(--text-dim)",fontFamily:"var(--font-display)",marginBottom:"10px" }}>{lb.recentCases}</div>
