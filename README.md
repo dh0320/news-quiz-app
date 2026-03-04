@@ -56,9 +56,12 @@
 #### 追加手順
 1. 既存ファイルを参考に新規JSONを作成
 2. 命名規則に沿って保存（例: `2026-03-01-news-01.json`）
-3. 必要に応じてバリデーション実行  
+3. `meta.subject` は表示用ラベル、`meta.genre` はフィルタ用の内部IDとして必ず分けて設定
+   - `category`（`daily_news` / `deep_dive` / `special`）は配信種別として別軸で維持
+   - `genre` は以下のいずれかを指定: `politics_policy` / `economy_finance` / `entertainment_culture` / `tech_ai` / `career_workstyle`
+4. 必要に応じてバリデーション実行  
    - `scripts/validate-episode.mjs`
-4. ローカルで表示確認後にデプロイ
+5. ローカルで表示確認後にデプロイ
 
 ### 3-2. Supabaseスキーマ管理
 
