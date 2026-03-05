@@ -59,12 +59,25 @@ function syncEpisodesToSupabase(supabase) {
           ? new Date(ep.meta.date.replace(/\./g, "-")).toISOString()
           : new Date().toISOString(),
       }));
-      const { error } = await supabase
+      console.log("[syncEpisodes] 同期開始:", rows.map(r => r.episode_id));
+      const { data, error } = await supabase
         .from("episodes")
-        .upsert(rows, { onConflict: "episode_id" });
-      if (error) console.warn("[syncEpisodes] upsert失敗:", error.message);
+        .upsert(rows, { onConflict: "episode_id" })
+        .select("episode_id");
+      if (error) {
+        console.error("[syncEpisodes] upsert失敗:", error.message, error.details, error.hint);
+        // genre列が未追加の可能性 → genreなしでリトライ
+        const rowsNoGenre = rows.map(({ genre, ...rest }) => rest);
+        const { error: retryErr } = await supabase
+          .from("episodes")
+          .upsert(rowsNoGenre, { onConflict: "episode_id" });
+        if (retryErr) console.error("[syncEpisodes] リトライも失敗:", retryErr.message);
+        else console.log("[syncEpisodes] genre無しでリトライ成功");
+      } else {
+        console.log("[syncEpisodes] 同期成功:", data?.length ?? 0, "件");
+      }
     } catch (e) {
-      console.warn("[syncEpisodes] 同期エラー:", e.message);
+      console.error("[syncEpisodes] 同期エラー:", e.message);
     }
   })();
   return syncPromise;
