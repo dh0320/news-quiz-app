@@ -42,9 +42,37 @@ function isValidEpisodeShape(data) {
   return Array.isArray(data?.testPhase?.confirm) && Array.isArray(data?.testPhase?.explore);
 }
 
+// ローカルJSONのエピソードをSupabaseに同期（アプリ起動時に1回だけ）
+let syncPromise = null;
+function syncEpisodesToSupabase(supabase) {
+  if (syncPromise || !supabase) return syncPromise;
+  syncPromise = (async () => {
+    try {
+      const episodes = Object.values(localEpisodeModules)
+        .map((mod) => mod.default)
+        .filter(isValidEpisodeShape);
+      const rows = episodes.map((ep) => ({
+        episode_id: ep.episodeId,
+        data_json: ep,
+        genre: ep.meta?.genre || null,
+        published_at: ep.meta?.date
+          ? new Date(ep.meta.date.replace(/\./g, "-")).toISOString()
+          : new Date().toISOString(),
+      }));
+      const { error } = await supabase
+        .from("episodes")
+        .upsert(rows, { onConflict: "episode_id" });
+      if (error) console.warn("[syncEpisodes] upsert失敗:", error.message);
+    } catch (e) {
+      console.warn("[syncEpisodes] 同期エラー:", e.message);
+    }
+  })();
+  return syncPromise;
+}
+
 /**
  * エピソードデータを動的に取得するフック
- * - Supabase接続時: episodesテーブルからfetch
+ * - Supabase接続時: episodesテーブルからfetch（起動時にローカルJSONを自動同期）
  * - 未接続時: ローカルJSONにフォールバック
  * - ?ep=XXXX で特定エピソード指定可能
  * @param {string} selectedGenre 選択されたジャンル（all の場合は全件対象）
@@ -70,6 +98,9 @@ export function useEpisode(selectedGenre = "all") {
     let cancelled = false;
 
     (async () => {
+      // エピソードをDBに同期してからfetch（FK制約を満たすため）
+      await syncEpisodesToSupabase(supabase);
+
       try {
         let query;
         if (epParam) {
