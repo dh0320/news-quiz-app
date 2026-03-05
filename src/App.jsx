@@ -47,15 +47,24 @@ function MainApp() {
 
   // プレイセッション: INSERT（Learning開始時）
   const createSession = useCallback(async () => {
-    if (!supabase || !user || !episode) return;
+    if (!supabase || !user || !episode) {
+      console.warn("[play_sessions] createSession skip:", { supabase: !!supabase, user: !!user, episode: !!episode });
+      return;
+    }
     try {
       if (sessionIdRef.current) return;
+      console.log("[play_sessions] creating session for:", episode.episodeId, "user:", user.id);
       const { data, error } = await supabase
         .from("play_sessions")
         .insert({ episode_id: episode.episodeId, user_id: user.id })
         .select("id")
         .single();
-      if (!error) sessionIdRef.current = data.id;
+      if (error) {
+        console.error("[play_sessions] createSession error:", error.message, error.details, error.hint);
+      } else {
+        sessionIdRef.current = data.id;
+        console.log("[play_sessions] session created:", data.id);
+      }
     } catch (e) {
       console.error("[play_sessions] createSession failed:", e?.message ?? e);
     }
@@ -63,23 +72,37 @@ function MainApp() {
 
   // プレイセッション: UPDATE（スコア記録）
   const updateSession = useCallback(async (fields) => {
-    if (!supabase || !user || !episode) return;
+    if (!supabase || !user || !episode) {
+      console.warn("[play_sessions] updateSession skip:", { supabase: !!supabase, user: !!user, episode: !!episode });
+      return;
+    }
     try {
       // セッション未作成のまま更新フェーズに入るケースを救済
       if (!sessionIdRef.current) {
+        console.log("[play_sessions] session not found, creating in updateSession...");
         const { data, error } = await supabase
           .from("play_sessions")
           .insert({ episode_id: episode.episodeId, user_id: user.id })
           .select("id")
           .single();
-        if (error || !data?.id) return;
+        if (error) {
+          console.error("[play_sessions] fallback insert error:", error.message, error.details, error.hint);
+          return;
+        }
+        if (!data?.id) return;
         sessionIdRef.current = data.id;
       }
 
-      await supabase
+      console.log("[play_sessions] updating session:", sessionIdRef.current, fields);
+      const { error: updateErr } = await supabase
         .from("play_sessions")
         .update(fields)
         .eq("id", sessionIdRef.current);
+      if (updateErr) {
+        console.error("[play_sessions] update error:", updateErr.message);
+      } else {
+        console.log("[play_sessions] update success");
+      }
     } catch (e) {
       console.error("[play_sessions] updateSession failed:", e?.message ?? e);
     }
