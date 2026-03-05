@@ -84,8 +84,8 @@ const StatsScreen = ({ episode, myRank, onClose }) => {
         } else {
           setStats({ completedCount: 0, likeCount: likeCount ?? 0, avgScore: 0, rankDist: { S: 0, A: 0, B: 0, C: 0 } });
         }
-      } catch {
-        /* エラー時はデータなし表示 */
+      } catch (err) {
+        console.warn("[StatsScreen] 統計データ取得エラー:", err);
       } finally {
         setLoading(false);
       }
