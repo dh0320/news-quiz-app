@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "validate": "node scripts/validate-episode.mjs",
-    "check:episodes": "node scripts/check-episodes.mjs"
+    "check:episodes": "node scripts/check-episodes.mjs",
+    "upload:episodes": "node scripts/upload-episodes.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
