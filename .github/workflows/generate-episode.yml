@@ -27,7 +27,7 @@ permissions:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -70,13 +70,6 @@ jobs:
           npm run validate
           npm run check:episodes
 
-      - name: Upload to Supabase (非公開状態)
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          npm run upload:episodes -- "${{ steps.date.outputs.date }}"
-
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
@@ -89,3 +82,12 @@ jobs:
             git commit -m "add: ${DATE} エピソード自動生成"
             git push origin main
           fi
+
+      - name: Upload to Supabase (非公開状態)
+        if: env.SUPABASE_URL != ''
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm run upload:episodes -- "${{ steps.date.outputs.date }}"
