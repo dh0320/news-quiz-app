@@ -1,0 +1,85 @@
+name: Generate News Quiz Episodes
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: '生成対象日 (YYYY-MM-DD形式、空欄で当日)'
+        required: false
+        type: string
+      genre:
+        description: '特定ジャンルのみ生成する場合 (空欄で全5ジャンル)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - 'politics_policy:01'
+          - 'economy_finance:02'
+          - 'entertainment_culture:03'
+          - 'tech_ai:04'
+          - 'career_workstyle:05'
+  # 毎日自動実行する場合は以下のコメントを外す
+  # schedule:
+  #   - cron: '0 0 * * *'  # UTC 00:00 = JST 09:00
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Set date
+        id: date
+        run: |
+          if [ -n "${{ inputs.date }}" ]; then
+            echo "date=${{ inputs.date }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate episodes
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          DATE="${{ steps.date.outputs.date }}"
+
+          if [ -n "${{ inputs.genre }}" ]; then
+            GENRE="${{ inputs.genre }}"
+            GENRE_ID="${GENRE%%:*}"
+            GENRE_NUM="${GENRE##*:}"
+            bash scripts/generate-episode.sh "$DATE" "$GENRE_ID" "$GENRE_NUM"
+          else
+            bash scripts/generate-episode.sh "$DATE"
+          fi
+
+      - name: Validate generated episodes
+        run: |
+          npm run validate
+          npm run check:episodes
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          DATE="${{ steps.date.outputs.date }}"
+          git add "src/data/episodes/${DATE}-news-*.json"
+          if git diff --cached --quiet; then
+            echo "No new episodes to commit"
+          else
+            git commit -m "add: ${DATE} エピソード自動生成"
+            git push origin main
+          fi
