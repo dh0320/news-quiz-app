@@ -33,7 +33,9 @@ generate_one() {
   echo " Generating: ${genre} -> ${filename}"
   echo "=============================================="
 
-  claude -p "${PROMPT}
+  claude -p \
+    --dangerously-skip-permissions \
+    "${PROMPT}
 
 ---
 
