@@ -57,7 +57,7 @@
 - `meta.date` は `YYYY.MM.DD` 形式
 - `meta.genre` はジャンルIDと一致
 - `meta.category` は `daily_news`
-- `learningPhase` は10〜30ターン（推奨23前後）
+- `learningPhase` は20〜30ターン（推奨23前後）
 - `testPhase.confirm` は3択問題×3問
 - `testPhase.explore` は穴埋め問題×2問
 
@@ -114,7 +114,7 @@
 - [ ] `episodeId` がファイル名（拡張子なし）と一致しているか
 - [ ] `meta.date` が `YYYY.MM.DD` 形式になっているか
 - [ ] `meta.genre` がタスクで指定されたジャンルIDと一致しているか
-- [ ] `learningPhase` が10〜30ターンの範囲内か
+- [ ] `learningPhase` が20〜30ターンの範囲内か
 - [ ] `testPhase.confirm` が正確に3問あるか
 - [ ] 各 `correctId` が `choices` 内の `id` に存在するか
 - [ ] 正解の `correctId` がA〜Dに偏っていないか（3問で全て同じIDは禁止）
