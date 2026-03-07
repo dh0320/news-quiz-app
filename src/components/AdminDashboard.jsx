@@ -206,6 +206,7 @@ const EpisodeManager = ({ supabase }) => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [sortKey, setSortKey] = useState("episode_date"); // "genre" | "episode_id" | "episode_date"
   const [sortDir, setSortDir] = useState("desc"); // "asc" | "desc"
+  const [filterGenre, setFilterGenre] = useState("all"); // "all" | genre id
 
   const fetchEpisodes = useCallback(async () => {
     setLoading(true);
@@ -292,8 +293,11 @@ const EpisodeManager = ({ supabase }) => {
     }
   };
 
-  // ソート済みエピソード
-  const sortedEpisodes = [...allEpisodes].sort((a, b) => {
+  // フィルター＋ソート済みエピソード
+  const filteredEpisodes = filterGenre === "all"
+    ? allEpisodes
+    : allEpisodes.filter((ep) => ep.genre === filterGenre);
+  const sortedEpisodes = [...filteredEpisodes].sort((a, b) => {
     let va = a[sortKey] || "";
     let vb = b[sortKey] || "";
     if (typeof va === "string") va = va.toLowerCase();
@@ -330,9 +334,23 @@ const EpisodeManager = ({ supabase }) => {
 
       {/* 全エピソード一覧 */}
       <div style={{ ...card, padding: "16px", overflowX: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-          <div style={{ fontSize: "12px", color: COLORS.textDim, letterSpacing: "0.1em" }}>
-            ALL EPISODES（{allEpisodes.length}件）
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ fontSize: "12px", color: COLORS.textDim, letterSpacing: "0.1em" }}>
+              ALL EPISODES（{filteredEpisodes.length}/{allEpisodes.length}件）
+            </div>
+            <select
+              value={filterGenre}
+              onChange={(e) => setFilterGenre(e.target.value)}
+              style={{
+                background: COLORS.bg, color: COLORS.text, border: `1px solid ${COLORS.border}`,
+                borderRadius: "4px", padding: "4px 8px", fontSize: "12px", cursor: "pointer", outline: "none",
+              }}
+            >
+              {GENRES.map((g) => (
+                <option key={g.id} value={g.id}>{g.shortLabel}</option>
+              ))}
+            </select>
           </div>
           <button onClick={fetchEpisodes} style={iconBtn}><RefreshCw size={14} /></button>
         </div>
