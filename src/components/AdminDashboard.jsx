@@ -204,6 +204,8 @@ const EpisodeManager = ({ supabase }) => {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null); // episode_id of currently acting
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [sortKey, setSortKey] = useState("episode_date"); // "genre" | "episode_id" | "episode_date"
+  const [sortDir, setSortDir] = useState("desc"); // "asc" | "desc"
 
   const fetchEpisodes = useCallback(async () => {
     setLoading(true);
@@ -280,6 +282,27 @@ const EpisodeManager = ({ supabase }) => {
   // アクティブエピソードのIDセット
   const activeIds = new Set(activeByGenre.map((a) => a.episode_id));
 
+  // ソート切替
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "episode_date" ? "desc" : "asc");
+    }
+  };
+
+  // ソート済みエピソード
+  const sortedEpisodes = [...allEpisodes].sort((a, b) => {
+    let va = a[sortKey] || "";
+    let vb = b[sortKey] || "";
+    if (typeof va === "string") va = va.toLowerCase();
+    if (typeof vb === "string") vb = vb.toLowerCase();
+    if (va < vb) return sortDir === "asc" ? -1 : 1;
+    if (va > vb) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* ジャンル別 表示中エピソード */}
@@ -316,13 +339,32 @@ const EpisodeManager = ({ supabase }) => {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${COLORS.border}` }}>
-              {["状態", "ジャンル", "タイトル", "エピソードID", "公開日", "PV", "操作"].map((h) => (
-                <th key={h} style={{ padding: "8px 6px", color: COLORS.textDim, fontWeight: 500, textAlign: "left", fontSize: "11px", whiteSpace: "nowrap" }}>{h}</th>
+              {[
+                { label: "状態", key: null },
+                { label: "ジャンル", key: "genre" },
+                { label: "タイトル", key: null },
+                { label: "エピソードID", key: "episode_id" },
+                { label: "データ日付", key: "episode_date" },
+                { label: "公開日", key: null },
+                { label: "PV", key: null },
+                { label: "操作", key: null },
+              ].map((h) => (
+                <th
+                  key={h.label}
+                  onClick={h.key ? () => handleSort(h.key) : undefined}
+                  style={{
+                    padding: "8px 6px", color: sortKey === h.key ? COLORS.accent : COLORS.textDim,
+                    fontWeight: 500, textAlign: "left", fontSize: "11px", whiteSpace: "nowrap",
+                    cursor: h.key ? "pointer" : "default", userSelect: "none",
+                  }}
+                >
+                  {h.label}{sortKey === h.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {allEpisodes.map((ep) => {
+            {sortedEpisodes.map((ep) => {
               const isActive = activeIds.has(ep.episode_id);
               const isPublished = !!ep.published_at;
               const isActing = actionLoading === ep.episode_id;
@@ -347,6 +389,9 @@ const EpisodeManager = ({ supabase }) => {
                   </td>
                   <td style={{ padding: "10px 6px", fontSize: "11px", color: COLORS.textDim, fontFamily: "monospace" }}>
                     {ep.episode_id}
+                  </td>
+                  <td style={{ padding: "10px 6px", fontSize: "11px", color: COLORS.textDim, whiteSpace: "nowrap" }}>
+                    {ep.episode_date || "-"}
                   </td>
                   <td style={{ padding: "10px 6px", fontSize: "11px", color: COLORS.textDim, whiteSpace: "nowrap" }}>
                     {ep.published_at ? new Date(ep.published_at).toLocaleDateString("ja-JP") : "-"}
