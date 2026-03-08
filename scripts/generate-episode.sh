@@ -34,6 +34,7 @@ generate_one() {
   echo "=============================================="
 
   claude -p \
+    --model claude-sonnet-4-6 \
     --dangerously-skip-permissions \
     "${PROMPT}
 
